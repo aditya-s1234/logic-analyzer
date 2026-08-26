@@ -1,25 +1,19 @@
 #include <Arduino.h>
 
-volatile uint8_t snapshot{};
+volatile uint8_t buffer1[100]{};
+volatile int index{};
+volatile bool running{false};
 
 void setup() {
 // write your initialization code here
 
     Serial.begin(9600);
-    //here i am directly setting all portb pins (which is 8-11) to input with bitmask
-    DDRB &= ~(1 << PB0);
-    DDRB &= ~(1 << PB1);
-    DDRB &= ~(1 << PB2);
-    DDRB &= ~(1 << PB3);
-    DDRB &= ~(1 << PB4);
-    DDRB &= ~(1 << PB5);
-    //since it's input this is similar to digitalwrite so they will have pullup turned on
-    PORTB |= (1 <<PB0);
-    PORTB |= (1 <<PB1);
-    PORTB |= (1 <<PB2);
-    PORTB |= (1 <<PB3);
-    PORTB |= (1 <<PB4);
-    PORTB |= (1 <<PB5);
+    //here i am directly setting all portd pins (which is 0-7) to input with bitmask
+    DDRD &= 0;
+
+    //all pins will have pullup on by setting all bits of portd to high
+    PORTD |= 255;
+
     //i should only have wgm12 turned on which is 3rd bit in register TCCR1b so im setting iit here
     //this combo gives mode 4 which will do CTC with OCR1A as max
     TCCR1A &= ~(1 << 0);
@@ -43,13 +37,30 @@ void setup() {
 
 ISR(TIMER1_COMPA_vect) {
     //samples here
-    snapshot = PINB;
+    running = true;
+    //if finished sampling into buffer, it turns off interrupt toggle
+    if (index >=99 ) {
+        TIMSK1 &= ~(1 << 1);
+        running = false;
+    }
+    buffer1[index] = PIND;
+    ++index;
 }
 
 
 void loop() {
 // write your code here
-    Serial.println(snapshot, BIN);
+    if (index > 99) {
+        for (uint8_t x : buffer1) {
+            Serial.println(x, BIN);
+        }
+    }
+    if (!running) {
+        TIMSK1 |= (1 << 1);
+        index=0;
+    }
+
+
     delay(500);
 
 }
