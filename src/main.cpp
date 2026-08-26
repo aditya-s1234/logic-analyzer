@@ -1,11 +1,13 @@
 #include <Arduino.h>
 
-volatile uint8_t buffer1[100]{};
+volatile uint8_t buffer1[512]{};
+volatile uint8_t buffer2[512]{};
 volatile int index{};
-volatile bool running{false};
+volatile bool firstRun{true};
+volatile bool readyToExtract{false};
 
 void setup() {
-// write your initialization code here
+    // write your initialization code here
 
     Serial.begin(9600);
     //here i am directly setting all portd pins (which is 0-7) to input with bitmask
@@ -37,30 +39,50 @@ void setup() {
 
 ISR(TIMER1_COMPA_vect) {
     //samples here
-    running = true;
-    //if finished sampling into buffer, it turns off interrupt toggle
-    if (index >=99 ) {
-        TIMSK1 &= ~(1 << 1);
-        running = false;
+
+    //here i am making a ping pong buffer. when the first gets full it signals to
+    //switch to the second one and turns the readytoextract bool to true so the serial will
+    //extract the data from it on time
+    if (firstRun) {
+        buffer1[index] = PIND;
+        ++index;
+        if (index >511 ) {
+            firstRun = false;
+            index=0;
+            readyToExtract = true;
+        }
+
     }
-    buffer1[index] = PIND;
-    ++index;
+    else if (!firstRun) {
+        buffer2[index] = PIND;
+        ++index;
+        if (index >511 ) {
+            firstRun = true;
+            index=0;
+            readyToExtract = true;
+        }
+    }
 }
 
 
 void loop() {
-// write your code here
-    if (index > 99) {
-        for (uint8_t x : buffer1) {
-            Serial.println(x, BIN);
+    // write your code here
+    if (readyToExtract) {
+        //first buffer finished uploading here
+        if (!firstRun) {
+            for (uint8_t x : buffer1) {
+                Serial.write(x);
+            }
         }
-    }
-    if (!running) {
-        TIMSK1 |= (1 << 1);
-        index=0;
-    }
+        //second buffer finishes uploading here
+        else {
+            for (uint8_t x : buffer2) {
+                Serial.write(x);
+            }
+        }
 
+    }
+    readyToExtract = false;
 
-    delay(500);
 
 }
