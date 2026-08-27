@@ -1,15 +1,19 @@
 #include <Arduino.h>
-
 volatile uint8_t buffer1[512]{};
 volatile uint8_t buffer2[512]{};
 volatile int index{};
 volatile bool firstRun{true};
-volatile bool readyToExtract{false};
+volatile bool readyToExtract1{false};
+volatile bool readyToExtract2{false};
+volatile bool buffer1Free{true};
+volatile bool buffer2Free{true};
+
 
 void setup() {
     // write your initialization code here
 
-    Serial.begin(9600);
+    //this is max baud rate and now it can keep up (it goes double so i have room) of 100 khz sample rate
+    Serial.begin(2000000);
     //here i am directly setting all portd pins (which is 0-7) to input with bitmask
     DDRD &= 0;
 
@@ -43,23 +47,25 @@ ISR(TIMER1_COMPA_vect) {
     //here i am making a ping pong buffer. when the first gets full it signals to
     //switch to the second one and turns the readytoextract bool to true so the serial will
     //extract the data from it on time
-    if (firstRun) {
+    if (firstRun && buffer1Free) {
         buffer1[index] = PIND;
         ++index;
         if (index >511 ) {
             firstRun = false;
             index=0;
-            readyToExtract = true;
+            readyToExtract1 = true;
+            buffer1Free = false;
         }
 
     }
-    else if (!firstRun) {
+    else if (!firstRun && buffer2Free) {
         buffer2[index] = PIND;
         ++index;
         if (index >511 ) {
             firstRun = true;
             index=0;
-            readyToExtract = true;
+            readyToExtract2 = true;
+            buffer2Free = false;
         }
     }
 }
@@ -67,22 +73,22 @@ ISR(TIMER1_COMPA_vect) {
 
 void loop() {
     // write your code here
-    if (readyToExtract) {
+    if (readyToExtract1) {
         //first buffer finished uploading here
-        if (!firstRun) {
-            for (uint8_t x : buffer1) {
-                Serial.write(x);
-            }
+        //i added this so that ISR wont overwrite here incase transfer is too slow
+        for (uint8_t x : buffer1) {
+            Serial.write(x);
         }
-        //second buffer finishes uploading here
-        else {
-            for (uint8_t x : buffer2) {
-                Serial.write(x);
-            }
-        }
-
+        buffer1Free = true;
+        readyToExtract1 = false;
     }
-    readyToExtract = false;
+        //second buffer finishes uploading here
+     if (readyToExtract2) {
 
-
+        for (uint8_t x : buffer2) {
+            Serial.write(x);
+        }
+        buffer2Free = true;
+        readyToExtract2 = false;
+     }
 }
