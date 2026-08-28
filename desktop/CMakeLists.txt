@@ -7,4 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(MiniLogicAnalyzer
         src/main.cpp
+        SerialPort.cpp
+        SerialPort.h
 )
