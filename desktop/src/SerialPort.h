@@ -17,9 +17,12 @@ public:
     {
     }
 
+    std::array<uint8_t, 512>& getBuffer() {
+        return m_programBuffer;
+    }
+
     void open();
     void close();
-    bool checkOpen();
     void read();
 
 };
