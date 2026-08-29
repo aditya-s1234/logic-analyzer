@@ -1,6 +1,6 @@
 #include <Arduino.h>
-volatile uint8_t buffer1[512]{};
-volatile uint8_t buffer2[512]{};
+uint8_t buffer1[512]{};
+uint8_t buffer2[512]{};
 volatile int index{};
 volatile bool firstRun{true};
 volatile bool readyToExtract1{false};
@@ -76,18 +76,14 @@ void loop() {
     if (readyToExtract1) {
         //first buffer finished uploading here
         //i added this so that ISR wont overwrite here incase transfer is too slow
-        for (uint8_t x : buffer1) {
-            Serial.write(x);
-        }
+        Serial.write(buffer1, 512);
         buffer1Free = true;
         readyToExtract1 = false;
     }
         //second buffer finishes uploading here
      if (readyToExtract2) {
 
-        for (uint8_t x : buffer2) {
-            Serial.write(x);
-        }
+         Serial.write(buffer2, 512);
         buffer2Free = true;
         readyToExtract2 = false;
      }
