@@ -38,6 +38,8 @@ void Capture::timing() {
         Levels x;
         //this should compare two specific bits on both uint8s, with &1 clearing everythng else
         if ((m_allTransitions[i].bitsChanged >> m_channel) & 1) {
+            //this gives where the new level begins
+            x.sample = m_allTransitions[i].sample;
             x.volts = (m_allSamples[m_allTransitions[i].sample-1] >> m_channel) & 1;
             x.duration = m_allTransitions[i].sample - startPos;
             startPos = m_allTransitions[i].sample;

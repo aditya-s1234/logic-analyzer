@@ -11,4 +11,6 @@ add_executable(MiniLogicAnalyzer
         src/SerialPort.h
         src/Capture.cpp
         src/Capture.h
+        src/UartDecoder.cpp
+        src/UartDecoder.h
 )

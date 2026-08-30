@@ -13,6 +13,7 @@ struct Transition {
 struct Levels {
     bool volts{};
     int duration{};
+    int sample{};
 };
 
 
