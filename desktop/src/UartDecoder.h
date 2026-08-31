@@ -18,6 +18,12 @@ public:
         :m_timings{x.getTimings()}, m_baudRate{baudRate}, m_allSamples{x.getSamples()}, m_channel{channel}
     {}
 
+    std::vector<uint8_t>& getData() {
+        return m_uartData;
+    }
+
     void captureUart();
+
+
 
 };

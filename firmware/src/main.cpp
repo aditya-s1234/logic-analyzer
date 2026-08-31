@@ -8,6 +8,7 @@ volatile bool readyToExtract2{false};
 volatile bool buffer1Free{true};
 volatile bool buffer2Free{true};
 
+uint8_t test {static_cast<uint8_t>('b')};
 
 void setup() {
     // write your initialization code here
@@ -17,8 +18,12 @@ void setup() {
     //here i am directly setting all portd pins (which is 0-7) to input with bitmask
     DDRD &= 0;
 
+
     //all pins will have pullup on by setting all bits of portd to high
     PORTD |= 255;
+
+    //PIN 5 WILL BE THE TESTING PIN TO TEST BYTE SIGNALS AND SEE IF IT DECODES PROPERLY
+    DDRD |= (1 << 5);
 
     //i should only have wgm12 turned on which is 3rd bit in register TCCR1b so im setting iit here
     //this combo gives mode 4 which will do CTC with OCR1A as max
@@ -38,6 +43,25 @@ void setup() {
     OCR1A = 159;
     //timsk1 handles interrupts, bit 1 is OCIE1A, makes timer interrupt when ocr1a is matched
     TIMSK1 |= (1 << 1);
+    delay(1000);
+}
+
+
+void sendByte(uint8_t data) {
+    //start bit
+    PORTD &= ~(1 << 5);
+    delayMicroseconds(104);
+    //8 data bits
+    for (int i = 0; i < 8; ++i) {
+        if (data & (1 << i))
+            PORTD |= (1 << 5);
+        else
+            PORTD &= ~(1 << 5);
+        delayMicroseconds(104);
+    }
+    //stop bit
+    PORTD |= (1 << 5);
+    delayMicroseconds(104);
 }
 
 
@@ -73,6 +97,10 @@ ISR(TIMER1_COMPA_vect) {
 
 void loop() {
     // write your code here
+
+    static uint8_t testByte = 0;
+    sendByte(testByte);
+    ++testByte;
     if (readyToExtract1) {
         //first buffer finished uploading here
         //i added this so that ISR wont overwrite here incase transfer is too slow
@@ -87,4 +115,6 @@ void loop() {
         buffer2Free = true;
         readyToExtract2 = false;
      }
+
+
 }

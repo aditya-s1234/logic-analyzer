@@ -7,7 +7,7 @@ void UartDecoder::captureUart() {
         uint8_t uartByte{0};
         int startLoc{};
         //my sampler only works at 94.6khz rn. this is how long a start/data/stop bit should last
-        double bitDuration {94600.0 / m_baudRate};
+        double bitDuration {94600.0 / m_baudRate * 2.2};
         //here i am checking for start bit, so bit must be high then low, and it should be appoximately
         //this finds the center of the start bit with bitduration/2 and checks if specific value is low (to avoid issues with noise)
         if (m_timings[i].volts == 1 && (m_allSamples[std::lround(m_timings[i].sample + bitDuration/2)] >> m_channel & 1) == 0)  {
